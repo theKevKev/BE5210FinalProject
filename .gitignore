@@ -1,5 +1,16 @@
-checkpoints/*
-data/val/*
-data/train/*
-res_npy/*
-res.html
+# Large data directories - too big for GitHub
+cleaned_data/
+raw_data/
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env

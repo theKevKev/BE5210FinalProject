@@ -1,0 +1,53 @@
+Device: mps  |  Seed: 42
+
+Run version: v4
+
+[Fine-tune] Subject 1
+  Parameters: 652,613
+  Train windows:  11864  Val windows:     23  (T=29980, split at t=23984)
+  Epoch  train_loss  val_loss  val_corr
+  Encoder unfrozen at epoch 1
+      1      0.0650    0.0377    0.3321  [Thumb=0.625  Index=0.732  Middle=0.076  Pinky=-0.105]
+      5      0.0074    0.0343    0.5146  [Thumb=0.578  Index=0.812  Middle=0.231  Pinky=0.437]
+     10      0.0038    0.0327    0.5101  [Thumb=0.603  Index=0.818  Middle=0.365  Pinky=0.254]
+     15      0.0027    0.0303    0.5353  [Thumb=0.604  Index=0.821  Middle=0.422  Pinky=0.294]
+     20      0.0022    0.0332    0.5339  [Thumb=0.626  Index=0.795  Middle=0.455  Pinky=0.259]
+     25      0.0020    0.0324    0.5375  [Thumb=0.619  Index=0.791  Middle=0.432  Pinky=0.309]
+     30      0.0019    0.0323    0.5298  [Thumb=0.621  Index=0.788  Middle=0.423  Pinky=0.287]
+  Best val_corr = 0.5484  →  subj1_cnn_best_v4.pt
+
+[Fine-tune] Subject 2
+  Parameters: 598,853
+  Train windows:  11864  Val windows:     23  (T=29980, split at t=23984)
+  Epoch  train_loss  val_loss  val_corr
+  Encoder unfrozen at epoch 1
+      1      0.0802    0.0457    0.3048  [Thumb=0.363  Index=0.407  Middle=0.194  Pinky=0.255]
+      5      0.0089    0.0463    0.3929  [Thumb=0.667  Index=0.610  Middle=0.065  Pinky=0.230]
+     10      0.0044    0.0469    0.3969  [Thumb=0.642  Index=0.697  Middle=0.152  Pinky=0.097]
+     15      0.0030    0.0471    0.3348  [Thumb=0.569  Index=0.537  Middle=0.146  Pinky=0.088]
+     20      0.0025    0.0455    0.3481  [Thumb=0.622  Index=0.519  Middle=0.115  Pinky=0.136]
+     25      0.0022    0.0448    0.3469  [Thumb=0.631  Index=0.506  Middle=0.137  Pinky=0.115]
+     30      0.0021    0.0449    0.3564  [Thumb=0.630  Index=0.501  Middle=0.170  Pinky=0.124]
+  Best val_corr = 0.4363  →  subj2_cnn_best_v4.pt
+
+[Fine-tune] Subject 3
+  Parameters: 660,293
+  Train windows:  11864  Val windows:     23  (T=29980, split at t=23984)
+  Epoch  train_loss  val_loss  val_corr
+  Encoder unfrozen at epoch 1
+      1      0.0639    0.0399    0.5747  [Thumb=0.661  Index=0.493  Middle=0.657  Pinky=0.488]
+      5      0.0091    0.0377    0.6192  [Thumb=0.799  Index=0.451  Middle=0.563  Pinky=0.664]
+     10      0.0050    0.0371    0.6216  [Thumb=0.807  Index=0.473  Middle=0.590  Pinky=0.616]
+     15      0.0035    0.0399    0.6123  [Thumb=0.799  Index=0.451  Middle=0.555  Pinky=0.644]
+     20      0.0029    0.0397    0.6142  [Thumb=0.793  Index=0.461  Middle=0.541  Pinky=0.661]
+     25      0.0026    0.0409    0.6078  [Thumb=0.785  Index=0.444  Middle=0.532  Pinky=0.670]
+     30      0.0026    0.0413    0.6083  [Thumb=0.785  Index=0.442  Middle=0.540  Pinky=0.666]
+  Best val_corr = 0.6298  →  subj3_cnn_best_v4.pt
+
+=== CNN Summary ===
+  Subject 1: val_corr = 0.5484
+  Subject 2: val_corr = 0.4363
+  Subject 3: val_corr = 0.6298
+  Mean: 0.5382
+
+  Metadata saved → /Users/home/BE5210Homework/BE5210FinalProject/metadata/cnn_v4.json

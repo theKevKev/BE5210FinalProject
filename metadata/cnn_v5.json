@@ -1,0 +1,63 @@
+{
+  "run_version": 5,
+  "timestamp": "2026-04-17T08:05:30",
+  "seed": 42,
+  "device": "mps",
+  "pretrain": false,
+  "hyperparameters": {
+    "window": 256,
+    "batch_size": 32,
+    "pretrain_epochs": 20,
+    "finetune_epochs": 30,
+    "lr": 8.42e-05,
+    "train_stride": 2,
+    "loss_fingers": [
+      0,
+      1,
+      2,
+      4
+    ],
+    "freeze_epochs": 0
+  },
+  "architecture": {
+    "channels": [
+      32,
+      32,
+      64,
+      64,
+      128,
+      128
+    ],
+    "kernels": [
+      7,
+      7,
+      5,
+      5,
+      5
+    ],
+    "strides": [
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "dilations": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "skip_levels": [
+      0,
+      1
+    ]
+  },
+  "results": {
+    "subj1_val_corr": 0.4608,
+    "subj2_val_corr": 0.3411,
+    "subj3_val_corr": 0.618
+  },
+  "mean_val_corr": 0.4733
+}
