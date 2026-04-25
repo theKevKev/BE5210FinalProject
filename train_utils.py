@@ -43,23 +43,14 @@ def combined_loss(y_hat: torch.Tensor, y: torch.Tensor,
 # ─────────────────────────────────────────────────────────────────────────────
 
 class WindowDataset(Dataset):
-    """
-    Sliding-window dataset over (C, F, T) spectrograms.
-
-    Returns:
-      x : (C, F, window)   if flat=False  [for CNN]
-          (window, C*F)    if flat=True   [for LSTM / Transformer]
-      y : (5, window)
-    """
-    def __init__(self, specs: np.ndarray, y: np.ndarray,
-                 window: int, stride: int = 1, flat: bool = False):
+    """Sliding-window dataset over (C, F, T) spectrograms. Returns x: (C, F, window), y: (5, window)."""
+    def __init__(self, specs: np.ndarray, y: np.ndarray, window: int, stride: int = 1):
         T = specs.shape[2]
         assert y.shape[0] == T, f'specs T={T} but y T={y.shape[0]}'
         self.specs  = torch.from_numpy(specs.astype('float32'))
         self.y      = torch.from_numpy(y.T.astype('float32'))  # (5, T)
         self.window = window
         self.stride = stride
-        self.flat   = flat
         self.starts = list(range(0, T - window, stride))
 
     def __len__(self):
@@ -68,25 +59,20 @@ class WindowDataset(Dataset):
     def __getitem__(self, idx):
         s = self.starts[idx]
         e = s + self.window
-        x = self.specs[..., s:e]                    # (C, F, window)
-        if self.flat:
-            C, n_f, W = x.shape
-            x = x.reshape(C * n_f, W).T             # (window, C*F)
-        return x, self.y[:, s:e]                    # y: (5, window)
+        return self.specs[..., s:e], self.y[:, s:e]
 
 
 def make_loaders(specs: np.ndarray, y: np.ndarray,
                  window: int, batch_size: int,
                  train_frac: float = TRAIN_FRAC,
                  train_stride: int = 1,
-                 flat: bool = False,
                  num_workers: int = 0):
     """Chronological split → (train_loader, val_loader)."""
     T   = specs.shape[2]
     cut = int(T * train_frac)
 
-    train_ds = WindowDataset(specs[..., :cut], y[:cut],  window, stride=train_stride, flat=flat)
-    val_ds   = WindowDataset(specs[..., cut:], y[cut:],  window, stride=window,       flat=flat)
+    train_ds = WindowDataset(specs[..., :cut], y[:cut],  window, stride=train_stride)
+    val_ds   = WindowDataset(specs[..., cut:], y[cut:],  window, stride=window)
 
     print(f'  Train windows: {len(train_ds):>6}  Val windows: {len(val_ds):>6}  '
           f'(T={T}, split at t={cut})')
@@ -103,8 +89,7 @@ def make_loaders(specs: np.ndarray, y: np.ndarray,
 @torch.no_grad()
 def predict_full(model: nn.Module, specs: np.ndarray,
                  device: str, window: int,
-                 stride_multiple: int = 1,
-                 flat: bool = False) -> np.ndarray:
+                 stride_multiple: int = 1) -> np.ndarray:
     """
     Run model over a full spectrogram in non-overlapping windows.
 
@@ -118,10 +103,9 @@ def predict_full(model: nn.Module, specs: np.ndarray,
     preds = []
     step  = window
     for s in range(0, T_trim, step):
-        e    = s + step
+        e     = s + step
         chunk = specs[..., s:min(e, T_trim)]
 
-        # Pad last chunk if shorter than window
         if chunk.shape[-1] < window:
             pad   = window - chunk.shape[-1]
             keep  = chunk.shape[-1]
@@ -129,11 +113,7 @@ def predict_full(model: nn.Module, specs: np.ndarray,
         else:
             keep = step
 
-        if flat:
-            x = torch.from_numpy(chunk.reshape(C * n_f, window).T.astype('float32')).unsqueeze(0).to(device)
-        else:
-            x = torch.from_numpy(chunk.astype('float32')).unsqueeze(0).to(device)
-
+        x   = torch.from_numpy(chunk.astype('float32')).unsqueeze(0).to(device)
         out = model(x)[0].cpu().numpy()    # (5, window)
         preds.append(out[:, :keep])
 
@@ -153,14 +133,13 @@ def predict_full(model: nn.Module, specs: np.ndarray,
 
 def compute_val_corr(model: nn.Module, specs_val: np.ndarray, y_val: np.ndarray,
                      device: str, window: int,
-                     stride_multiple: int = 1,
-                     flat: bool = False) -> tuple:
+                     stride_multiple: int = 1) -> tuple:
     """
     Predict full validation segment, Gaussian-smooth, compute Pearson r.
 
     Returns (mean_corr_over_eval_fingers, list_of_5_corrs).
     """
-    preds  = predict_full(model, specs_val, device, window, stride_multiple, flat)
+    preds  = predict_full(model, specs_val, device, window, stride_multiple)
     smooth = scipy.ndimage.gaussian_filter1d(preds.T, sigma=SMOOTH_SIGMA).T   # (T, 5)
     T      = min(smooth.shape[0], y_val.shape[0])
     corrs  = [pearsonr(y_val[:T, f], smooth[:T, f])[0] for f in range(5)]

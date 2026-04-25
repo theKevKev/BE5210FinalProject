@@ -1,16 +1,9 @@
 """
 models.py
 =========
-Two model architectures for ECoG → finger flex decoding.
-
-  AutoEncoder1D  — U-Net 1D CNN with skip connections.
-                   Input:  (B, C, F, T)
-                   Output: (B, n_out, T)
-                   n_out = C*F for reconstruction pre-training; 5 for finger flex.
-
-  BiGRUPredictor — GRU with optional bidirectionality.
-                   Input:  (B, T, C*F)
-                   Output: (B, 5, T)
+AutoEncoder1D — U-Net 1D CNN for ECoG → finger flex decoding.
+  Input:  (B, C, F, T)
+  Output: (B, n_out, T)
 """
 
 import torch
@@ -51,7 +44,7 @@ class UpConvBlock(nn.Module):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1.  AutoEncoder1D  (U-Net style 1D CNN)
+# AutoEncoder1D  (U-Net style 1D CNN)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _DEFAULT_CHANNELS  = [32, 32, 64, 64, 128, 128]
@@ -147,39 +140,3 @@ class AutoEncoder1D(nn.Module):
                 x = torch.cat([x[..., :t], skip[..., :t]], dim=1)
 
         return self.head(x)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 2.  BiGRUPredictor
-# ─────────────────────────────────────────────────────────────────────────────
-
-class BiGRUPredictor(nn.Module):
-    """
-    GRU with optional bidirectionality.
-
-    Input:  (B, T, C*F)
-    Output: (B, 5, T)
-
-    Set bidirectional=False for a causal (unidirectional) model — useful if
-    you want to avoid using future context during inference.
-    """
-    def __init__(self, n_features, d_model=128, hidden=128, n_layers=2,
-                 n_out=5, dropout=0.3, bidirectional=True):
-        super().__init__()
-        self.bidirectional = bidirectional
-        self.input_proj    = nn.Linear(n_features, d_model)
-        self.norm_in       = nn.LayerNorm(d_model)
-        self.gru           = nn.GRU(d_model, hidden, n_layers,
-                                    batch_first=True, bidirectional=bidirectional,
-                                    dropout=dropout if n_layers > 1 else 0.0)
-        head_in   = hidden * 2 if bidirectional else hidden
-        self.head = nn.Linear(head_in, n_out)
-
-    @property
-    def stride_multiple(self):
-        return 1
-
-    def forward(self, x):
-        x = self.norm_in(self.input_proj(x))
-        x, _ = self.gru(x)
-        return self.head(x).transpose(1, 2)

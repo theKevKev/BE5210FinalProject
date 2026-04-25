@@ -5,16 +5,10 @@ Rebuilds cleaned_data/ from raw .mat files.
 
 Saves per subject to cleaned_data/subj{N}/:
   specs_train.npy  (C, F, T)      scaled ECoG spectrograms
-  y_train.npy      (T, 5)         scaled finger flex labels  [ML-ready]
-  X_train.npy      (T, C*F)       flat spectrogram features  [ML-ready]
+  y_train.npy      (T, 5)         scaled finger flex labels
   specs_lead.npy   (C, F, T_lead) scaled leaderboard spectrograms
-  X_lead.npy       (T_lead, C*F)  flat leaderboard features  [ML-ready]
   ecog_scaler.pkl                 fitted RobustScaler  (for test-set use)
   ff_scaler.pkl                   fitted MinMaxScaler  (for test-set use)
-
-NO time-delay shift is applied. The model learns the temporal relationship
-directly from the windowed data (the 200 ms neural lead is within every
-2.56 s window). This also keeps leaderboard predictions naturally aligned.
 """
 
 import pathlib, pickle, sys
@@ -56,17 +50,10 @@ def process_subject(ecog_tr, dg_tr, ecog_lead, subj_idx, fs=1000):
     ff_scaler, ff_scaled = scale_fingerflex(ff)
     ecog_scaler, specs_scaled, specs_lead_scaled = scale_ecog(specs, specs_lead)
 
-    C, F, T = specs_scaled.shape
-    T_lead  = specs_lead_scaled.shape[2]
-
-    # Flat features: (T, C*F)
-    X_train = specs_scaled.reshape(C * F, T).T.astype('float32')
-    X_lead  = specs_lead_scaled.reshape(C * F, T_lead).T.astype('float32')
-
     # Labels: (T, 5)
     y_train = ff_scaled.T.astype('float32')
 
-    return specs_scaled, y_train, X_train, specs_lead_scaled, X_lead, ecog_scaler, ff_scaler
+    return specs_scaled, y_train, specs_lead_scaled, ecog_scaler, ff_scaler
 
 
 def main():
@@ -80,24 +67,20 @@ def main():
 
     for subj in range(3):
         print(f'\n=== Subject {subj + 1} ===')
-        specs, y, X, specs_lead, X_lead, ecog_sc, ff_sc = process_subject(
+        specs, y, specs_lead, ecog_sc, ff_sc = process_subject(
             ecog_all[subj, 0], dg_all[subj, 0], lead_all[subj, 0], subj,
         )
 
-        # Verify labels are smooth
         zero_frac = (np.diff(y[:, 0]) == 0).mean()
         print(f'  y zero-diff fraction: {zero_frac:.3f}  (should be ~0 for smooth labels)')
-        print(f'  specs={specs.shape}  y={y.shape}  X={X.shape}')
-        print(f'  specs_lead={specs_lead.shape}  X_lead={X_lead.shape}')
+        print(f'  specs={specs.shape}  y={y.shape}  specs_lead={specs_lead.shape}')
 
         subj_dir = CLEAN_DATA_DIR / f'subj{subj + 1}'
         subj_dir.mkdir(parents=True, exist_ok=True)
 
         np.save(subj_dir / 'specs_train.npy', specs)
         np.save(subj_dir / 'y_train.npy',     y)
-        np.save(subj_dir / 'X_train.npy',     X)
         np.save(subj_dir / 'specs_lead.npy',  specs_lead)
-        np.save(subj_dir / 'X_lead.npy',      X_lead)
 
         with open(subj_dir / 'ecog_scaler.pkl', 'wb') as f:
             pickle.dump(ecog_sc, f)
